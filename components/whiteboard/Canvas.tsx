@@ -9,7 +9,7 @@ import { Point, Stroke } from '@/types/whiteboard';
 interface CanvasProps {
   onStrokeComplete?: (stroke: Stroke) => void;
   onCursorMove?: (x: number, y: number) => void;
-  onCanvasReady?: (canvasRef: React.RefObject<HTMLCanvasElement>) => void;
+  onCanvasReady?: (canvasRef: React.RefObject<HTMLCanvasElement | null>) => void;
 }
 
 export default function Canvas({ onStrokeComplete, onCursorMove, onCanvasReady }: CanvasProps) {
@@ -20,7 +20,7 @@ export default function Canvas({ onStrokeComplete, onCursorMove, onCanvasReady }
 
   // Expose canvas ref to parent
   useEffect(() => {
-    if (onCanvasReady && canvasRef.current) {
+    if (onCanvasReady) {
       onCanvasReady(canvasRef);
     }
   }, [onCanvasReady]);

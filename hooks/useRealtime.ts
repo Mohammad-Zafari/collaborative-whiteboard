@@ -12,19 +12,35 @@ export function useRealtime(
   const managerRef = useRef<RealtimeManager | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !roomId || !userId) {
-      console.log('Realtime disabled: Supabase not configured or missing room/user info');
+    if (!isSupabaseConfigured) {
+      console.log('⚠️ Realtime disabled: Supabase not configured');
       return;
     }
+
+    if (!roomId) {
+      console.log('⚠️ Realtime disabled: roomId is missing');
+      return;
+    }
+
+    if (!userId) {
+      console.log('⚠️ Realtime disabled: userId is missing');
+      return;
+    }
+
+    console.log('🚀 Initializing realtime connection:', { roomId, userId, userName });
 
     // Create realtime manager
     const manager = new RealtimeManager(roomId, userId, userName, userColor);
     managerRef.current = manager;
 
     // Connect with callbacks
-    manager.connect(callbacks);
+    const channel = manager.connect(callbacks);
 
-    console.log('✅ Connected to realtime channel:', roomId);
+    if (channel) {
+      console.log('✅ Connected to realtime channel:', roomId);
+    } else {
+      console.error('❌ Failed to connect to realtime channel');
+    }
 
     // Cleanup on unmount
     return () => {

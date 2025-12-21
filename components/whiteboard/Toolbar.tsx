@@ -12,9 +12,11 @@ const WIDTHS = [1, 2, 4, 8, 12];
 
 interface ToolbarProps {
   onClear?: () => void;
+  onUndo?: (strokeId: string) => void;
+  onRedo?: (strokeId: string) => void;
 }
 
-export default function Toolbar({ onClear }: ToolbarProps) {
+export default function Toolbar({ onClear, onUndo, onRedo }: ToolbarProps) {
   const {
     currentTool,
     currentColor,
@@ -27,7 +29,29 @@ export default function Toolbar({ onClear }: ToolbarProps) {
     clear,
     strokes,
     redoStack,
+    getLastStrokeId,
+    getLastRedoStrokeId,
   } = useWhiteboardStore();
+
+  const handleUndo = () => {
+    const strokeId = getLastStrokeId();
+    if (strokeId) {
+      undo();
+      if (onUndo) {
+        onUndo(strokeId);
+      }
+    }
+  };
+
+  const handleRedo = () => {
+    const strokeId = getLastRedoStrokeId();
+    if (strokeId) {
+      redo();
+      if (onRedo) {
+        onRedo(strokeId);
+      }
+    }
+  };
 
   const handleClear = () => {
     if (confirm('Clear entire canvas? This cannot be undone.')) {
@@ -121,7 +145,7 @@ export default function Toolbar({ onClear }: ToolbarProps) {
       {/* Actions */}
       <div className="flex gap-2">
         <button
-          onClick={undo}
+          onClick={handleUndo}
           disabled={strokes.length === 0}
           className="p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
           title="Undo (Ctrl+Z)"
@@ -132,7 +156,7 @@ export default function Toolbar({ onClear }: ToolbarProps) {
         </button>
         
         <button
-          onClick={redo}
+          onClick={handleRedo}
           disabled={redoStack.length === 0}
           className="p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
           title="Redo (Ctrl+Y)"

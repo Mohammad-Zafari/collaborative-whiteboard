@@ -19,6 +19,8 @@ export async function getOrCreateRoom(slug: string): Promise<Room | null> {
   }
 
   try {
+    console.log('🔍 Looking up room with slug:', slug);
+    
     // First, try to get existing room
     const { data: existingRoom, error: fetchError } = await supabase
       .from('rooms')
@@ -27,10 +29,17 @@ export async function getOrCreateRoom(slug: string): Promise<Room | null> {
       .single();
 
     if (existingRoom) {
+      console.log('✅ Found existing room:', existingRoom.id);
       return existingRoom as Room;
     }
 
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      // PGRST116 is "not found" which is fine, we'll create it
+      console.error('❌ Error fetching room:', fetchError);
+    }
+
     // If room doesn't exist, create it
+    console.log('📝 Creating new room with slug:', slug);
     const { data: newRoom, error: createError } = await supabase
       .from('rooms')
       .insert({
@@ -41,13 +50,15 @@ export async function getOrCreateRoom(slug: string): Promise<Room | null> {
       .single();
 
     if (createError) {
-      console.error('Error creating room:', createError);
+      console.error('❌ Error creating room:', createError);
+      console.error('Error details:', JSON.stringify(createError, null, 2));
       return null;
     }
 
+    console.log('✅ Created new room:', newRoom.id);
     return newRoom as Room;
   } catch (error) {
-    console.error('Error in getOrCreateRoom:', error);
+    console.error('❌ Error in getOrCreateRoom:', error);
     return null;
   }
 }
@@ -57,10 +68,12 @@ export async function getOrCreateRoom(slug: string): Promise<Room | null> {
  */
 export async function loadRoomStrokes(roomId: string): Promise<Stroke[]> {
   if (!isSupabaseConfigured) {
+    console.warn('⚠️ Cannot load strokes: Supabase not configured');
     return [];
   }
 
   try {
+    console.log('📥 Loading strokes for room:', roomId);
     const { data, error } = await supabase
       .from('strokes')
       .select('*')
@@ -68,11 +81,12 @@ export async function loadRoomStrokes(roomId: string): Promise<Stroke[]> {
       .order('sequence_number', { ascending: true });
 
     if (error) {
-      console.error('Error loading strokes:', error);
+      console.error('❌ Error loading strokes:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       return [];
     }
 
-    return (data || []).map((dbStroke: any) => ({
+    const strokes = (data || []).map((dbStroke: any) => ({
       id: dbStroke.stroke_id,
       tool: dbStroke.tool,
       points: dbStroke.points,
@@ -82,8 +96,11 @@ export async function loadRoomStrokes(roomId: string): Promise<Stroke[]> {
       userName: dbStroke.user_name,
       timestamp: new Date(dbStroke.created_at).getTime(),
     }));
+
+    console.log(`✅ Loaded ${strokes.length} strokes from database`);
+    return strokes;
   } catch (error) {
-    console.error('Error in loadRoomStrokes:', error);
+    console.error('❌ Error in loadRoomStrokes:', error);
     return [];
   }
 }
@@ -93,6 +110,7 @@ export async function loadRoomStrokes(roomId: string): Promise<Stroke[]> {
  */
 export async function saveStroke(roomId: string, stroke: Stroke): Promise<boolean> {
   if (!isSupabaseConfigured) {
+    console.warn('⚠️ Cannot save stroke: Supabase not configured');
     return false;
   }
 
@@ -109,13 +127,17 @@ export async function saveStroke(roomId: string, stroke: Stroke): Promise<boolea
     });
 
     if (error) {
-      console.error('Error saving stroke:', error);
+      console.error('❌ Error saving stroke:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('Room ID:', roomId);
+      console.error('Stroke ID:', stroke.id);
       return false;
     }
 
+    console.log('✅ Stroke saved:', stroke.id);
     return true;
   } catch (error) {
-    console.error('Error in saveStroke:', error);
+    console.error('❌ Error in saveStroke:', error);
     return false;
   }
 }

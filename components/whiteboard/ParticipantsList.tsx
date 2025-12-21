@@ -2,26 +2,37 @@
 
 import { useState } from 'react';
 import { useWhiteboardStore } from '@/store/whiteboard';
+import { Stroke, CursorPosition } from '@/types/whiteboard';
 
 export default function ParticipantsList() {
   const [isOpen, setIsOpen] = useState(false);
   const { participants, remoteCursors, userId, userName, strokes } = useWhiteboardStore();
 
   // Get active participants from remote cursors (more accurate than DB)
-  const activeUsers = Array.from(remoteCursors.values());
+  const activeUsers: CursorPosition[] = Array.from(remoteCursors.values());
   
   // Add current user
-  const allUsers = [
+  interface UserInfo {
+    userId: string;
+    userName: string;
+    color: string;
+  }
+  
+  const allUsers: UserInfo[] = [
     {
       userId: userId,
       userName: userName + ' (You)',
       color: '#3B82F6',
     },
-    ...activeUsers,
+    ...activeUsers.map((cursor) => ({
+      userId: cursor.userId,
+      userName: cursor.userName,
+      color: cursor.color,
+    })),
   ];
 
   const totalStrokes = strokes.length;
-  const userStrokeCount = strokes.filter(s => s.userId === userId).length;
+  const userStrokeCount = strokes.filter((s: Stroke) => s.userId === userId).length;
 
   return (
     <>
@@ -70,7 +81,7 @@ export default function ParticipantsList() {
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {allUsers.map((user) => {
               const isCurrentUser = user.userId === userId;
-              const userStrokes = strokes.filter(s => s.userId === user.userId).length;
+              const userStrokes = strokes.filter((s: Stroke) => s.userId === user.userId).length;
               
               return (
                 <div

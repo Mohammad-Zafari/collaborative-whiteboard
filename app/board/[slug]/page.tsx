@@ -54,6 +54,13 @@ export default function BoardPage() {
   const { roomId, isLoading: roomLoading } = useRoom(roomSlug);
   const { strokes: historicalStrokes, isLoading: strokesLoading } = useRoomStrokes(roomId);
 
+  // Debug: Log roomId changes
+  useEffect(() => {
+    if (roomId) {
+      console.log('🏠 Room ID loaded:', roomId, '(slug:', roomSlug + ')');
+    }
+  }, [roomId, roomSlug]);
+
   // Load historical strokes into store
   useEffect(() => {
     if (!strokesLoading && historicalStrokes.length > 0) {
@@ -86,9 +93,21 @@ export default function BoardPage() {
     clear();
   }, [clear]);
 
-  // Connect to realtime
+  const handleUndo = useCallback((strokeId: string) => {
+    console.log('↩️ Received remote undo for stroke:', strokeId);
+    const { removeStrokeById } = useWhiteboardStore.getState();
+    removeStrokeById(strokeId);
+  }, []);
+
+  const handleRedo = useCallback((strokeId: string) => {
+    console.log('↪️ Received remote redo for stroke:', strokeId);
+    const { addStrokeById } = useWhiteboardStore.getState();
+    addStrokeById(strokeId);
+  }, []);
+
+  // Connect to realtime (only when roomId is loaded)
   realtimeManagerRef.current = useRealtime(
-    roomId || '',
+    roomId || '', // Use roomId from database (UUID), fallback to slug if not configured
     userId,
     userName,
     userColor,
@@ -98,18 +117,30 @@ export default function BoardPage() {
       onUserJoined: handleUserJoined,
       onUserLeft: handleUserLeft,
       onClear: handleClear,
+      onUndo: handleUndo,
+      onRedo: handleRedo,
     }
   );
 
   // Handle stroke completion (save to DB)
   const handleStrokeComplete = useCallback(async (stroke: Stroke) => {
-    if (!roomId || !isSupabaseConfigured) return;
+    if (!roomId || !isSupabaseConfigured) {
+      console.warn('⚠️ Cannot save stroke:', { roomId, isConfigured: isSupabaseConfigured });
+      return;
+    }
+    
+    console.log('💾 Saving stroke to database:', {
+      strokeId: stroke.id,
+      roomId: roomId,
+      userId: stroke.userId,
+      pointCount: stroke.points.length,
+    });
     
     const success = await saveStroke(roomId, stroke);
     if (success) {
-      console.log('✅ Stroke saved to database:', stroke.id);
+      console.log('✅ Stroke saved to database:', stroke.id, 'in room:', roomId);
     } else {
-      console.error('❌ Failed to save stroke');
+      console.error('❌ Failed to save stroke:', stroke.id);
     }
   }, [roomId]);
 
@@ -138,26 +169,51 @@ export default function BoardPage() {
     console.log('🗑️ Canvas cleared and broadcasted');
   }, [roomId]);
 
+  // Handle undo/redo with broadcasting
+  const handleUndoAction = useCallback(() => {
+    const { getLastStrokeId, undo } = useWhiteboardStore.getState();
+    const strokeId = getLastStrokeId();
+    if (strokeId) {
+      undo();
+      // Broadcast undo
+      if (realtimeManagerRef.current?.current) {
+        realtimeManagerRef.current.current.sendUndo(strokeId);
+      }
+    }
+  }, []);
+
+  const handleRedoAction = useCallback(() => {
+    const { getLastRedoStrokeId, redo } = useWhiteboardStore.getState();
+    const strokeId = getLastRedoStrokeId();
+    if (strokeId) {
+      redo();
+      // Broadcast redo
+      if (realtimeManagerRef.current?.current) {
+        realtimeManagerRef.current.current.sendRedo(strokeId);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     // Keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
         if (e.shiftKey) {
-          useWhiteboardStore.getState().redo();
+          handleRedoAction();
         } else {
-          useWhiteboardStore.getState().undo();
+          handleUndoAction();
         }
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
         e.preventDefault();
-        useWhiteboardStore.getState().redo();
+        handleRedoAction();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [handleUndoAction, handleRedoAction]);
 
   if (!isReady || roomLoading) {
     return (
@@ -211,7 +267,19 @@ export default function BoardPage() {
 
       {/* Toolbar */}
       <div className="absolute top-20 left-0 right-0 z-10">
-        <Toolbar onClear={handleClearCanvas} />
+        <Toolbar 
+          onClear={handleClearCanvas}
+          onUndo={(strokeId) => {
+            if (realtimeManagerRef.current?.current) {
+              realtimeManagerRef.current.current.sendUndo(strokeId);
+            }
+          }}
+          onRedo={(strokeId) => {
+            if (realtimeManagerRef.current?.current) {
+              realtimeManagerRef.current.current.sendRedo(strokeId);
+            }
+          }}
+        />
       </div>
 
       {/* Participants List */}

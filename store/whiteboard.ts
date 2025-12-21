@@ -27,6 +27,10 @@ interface WhiteboardState {
   undo: () => void;
   redo: () => void;
   clear: () => void;
+  removeStrokeById: (strokeId: string) => void;
+  addStrokeById: (strokeId: string) => void;
+  getLastStrokeId: () => string | null;
+  getLastRedoStrokeId: () => string | null;
   setTool: (tool: Tool) => void;
   setColor: (color: string) => void;
   setWidth: (width: number) => void;
@@ -39,7 +43,7 @@ interface WhiteboardState {
   loadStrokes: (strokes: Stroke[]) => void;
 }
 
-export const useWhiteboardStore = create<WhiteboardState>((set) => ({
+export const useWhiteboardStore = create<WhiteboardState>((set, get) => ({
   // Initial State
   strokes: [],
   redoStack: [],
@@ -77,6 +81,53 @@ export const useWhiteboardStore = create<WhiteboardState>((set) => ({
       const strokeToRedo = newRedoStack.pop();
       return {
         strokes: strokeToRedo ? [...state.strokes, strokeToRedo] : state.strokes,
+        redoStack: newRedoStack,
+      };
+    }),
+
+  getLastStrokeId: () => {
+    const state = get();
+    return state.strokes.length > 0 ? state.strokes[state.strokes.length - 1].id : null;
+  },
+
+  getLastRedoStrokeId: () => {
+    const state = get();
+    return state.redoStack.length > 0 ? state.redoStack[state.redoStack.length - 1].id : null;
+  },
+
+  removeStrokeById: (strokeId) =>
+    set((state) => {
+      const strokeIndex = state.strokes.findIndex(s => s.id === strokeId);
+      if (strokeIndex === -1) {
+        console.warn('⚠️ Stroke not found for undo:', strokeId);
+        return state;
+      }
+      
+      const newStrokes = [...state.strokes];
+      const removedStroke = newStrokes.splice(strokeIndex, 1)[0];
+      
+      console.log('↩️ Removed stroke by ID:', strokeId, 'from position:', strokeIndex);
+      
+      return {
+        strokes: newStrokes,
+        redoStack: removedStroke ? [...state.redoStack, removedStroke] : state.redoStack,
+      };
+    }),
+
+  addStrokeById: (strokeId) =>
+    set((state) => {
+      const strokeToAdd = state.redoStack.find(s => s.id === strokeId);
+      if (!strokeToAdd) {
+        console.warn('⚠️ Stroke not found in redo stack:', strokeId);
+        return state;
+      }
+      
+      const newRedoStack = state.redoStack.filter(s => s.id !== strokeId);
+      
+      console.log('↪️ Added stroke back by ID:', strokeId);
+      
+      return {
+        strokes: [...state.strokes, strokeToAdd],
         redoStack: newRedoStack,
       };
     }),
