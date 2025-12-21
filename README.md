@@ -22,12 +22,13 @@ A real-time collaborative whiteboard built with Next.js 15, TypeScript, and Supa
 - ✅ Load historical strokes on room join
 - 🔧 **Action Required**: [Configure Supabase](./REALTIME_SETUP.md) to enable
 
-### Phase 3: UX Polish (Planned)
-- ⏳ Remote cursor sharing with user names
-- ⏳ Participant list sidebar
-- ⏳ Enhanced room sharing
-- ⏳ Responsive design improvements
-- ⏳ Loading states
+### Phase 3: UX Polish ✅ (COMPLETED)
+- ✅ Remote cursor sharing with user names and colors
+- ✅ Participant list sidebar with stats
+- ✅ Export canvas as PNG/JPEG
+- ✅ Copy canvas to clipboard
+- ✅ Dark mode with theme persistence
+- ✅ Enhanced UI/UX
 
 ### Phase 4: Persistence (Planned)
 - ⏳ Save strokes to database
@@ -110,8 +111,8 @@ collaborative-whiteboard/
 
 - [x] **Phase 1**: Single-user canvas with drawing tools
 - [x] **Phase 2**: Real-time collaboration with Supabase (code complete, needs config)
-- [ ] **Phase 3**: Cursor sharing and UX improvements
-- [ ] **Phase 4**: Portfolio integration and export features
+- [x] **Phase 3**: Cursor sharing and UX improvements (COMPLETE!)
+- [ ] **Phase 4**: Advanced features (shapes, text, selection)
 
 ## Quick Start
 
