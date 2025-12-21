@@ -9,13 +9,21 @@ import { Point, Stroke } from '@/types/whiteboard';
 interface CanvasProps {
   onStrokeComplete?: (stroke: Stroke) => void;
   onCursorMove?: (x: number, y: number) => void;
+  onCanvasReady?: (canvasRef: React.RefObject<HTMLCanvasElement>) => void;
 }
 
-export default function Canvas({ onStrokeComplete, onCursorMove }: CanvasProps) {
+export default function Canvas({ onStrokeComplete, onCursorMove, onCanvasReady }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<DrawingEngine | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const currentStrokePoints = useRef<Point[]>([]);
+
+  // Expose canvas ref to parent
+  useEffect(() => {
+    if (onCanvasReady && canvasRef.current) {
+      onCanvasReady(canvasRef);
+    }
+  }, [onCanvasReady]);
 
   const {
     strokes,

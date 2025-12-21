@@ -4,6 +4,11 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Canvas from '@/components/whiteboard/Canvas';
 import Toolbar from '@/components/whiteboard/Toolbar';
+import RemoteCursors from '@/components/whiteboard/RemoteCursors';
+import ParticipantsList from '@/components/whiteboard/ParticipantsList';
+import ExportMenu from '@/components/whiteboard/ExportMenu';
+import ShareModal from '@/components/whiteboard/ShareModal';
+import ThemeToggle from '@/components/theme-toggle';
 import { useWhiteboardStore } from '@/store/whiteboard';
 import { generateUserId, generateUserName, generateUserColor, throttle } from '@/lib/canvas/utils';
 import { useRoom, useRoomStrokes } from '@/hooks/useRoom';
@@ -30,7 +35,9 @@ export default function BoardPage() {
 
   const [userColor, setUserColor] = useState('#FF6B6B');
   const [isReady, setIsReady] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const realtimeManagerRef = useRef<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Initialize user
   useEffect(() => {
@@ -187,15 +194,19 @@ export default function BoardPage() {
           )}
         </div>
         
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(window.location.href);
-            alert('Room link copied to clipboard!');
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-        >
-          Share Room
-        </button>
+        <div className="flex gap-2 items-center">
+          <ThemeToggle />
+          <ExportMenu canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>} roomSlug={roomSlug} />
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            Share
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -203,12 +214,27 @@ export default function BoardPage() {
         <Toolbar onClear={handleClearCanvas} />
       </div>
 
+      {/* Participants List */}
+      <ParticipantsList />
+
+      {/* Share Modal */}
+      <ShareModal 
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        roomSlug={roomSlug}
+      />
+
       {/* Canvas */}
       <div className="absolute inset-0 top-16">
         <Canvas 
           onStrokeComplete={handleStrokeComplete}
           onCursorMove={handleCursorMove2}
+          onCanvasReady={(ref) => {
+            canvasRef.current = ref.current;
+          }}
         />
+        {/* Remote cursors overlay */}
+        <RemoteCursors />
       </div>
 
       {/* Instructions */}
