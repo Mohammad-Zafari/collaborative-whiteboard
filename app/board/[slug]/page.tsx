@@ -229,7 +229,7 @@ export default function BoardPage() {
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-between px-6 z-20">
+      <div className="absolute top-0 left-0 right-0 h-16 bg-gray-200 dark:bg-gray-800 shadow-sm flex items-center justify-between px-6 z-20 border-b border-gray-300 dark:border-gray-700">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">
             Collaborative Whiteboard
@@ -306,7 +306,7 @@ export default function BoardPage() {
       </div>
 
       {/* Instructions */}
-      <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-xs z-10">
+      <div className="absolute bottom-4 left-4 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-xs z-10 border border-gray-300 dark:border-gray-700">
         <h3 className="font-semibold text-sm mb-2 text-gray-900 dark:text-white">
           Keyboard Shortcuts
         </h3>

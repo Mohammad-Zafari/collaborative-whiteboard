@@ -63,7 +63,7 @@ export default function Toolbar({ onClear, onUndo, onRedo }: ToolbarProps) {
   };
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 flex gap-6 items-center z-10">
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-lg p-4 flex gap-6 items-center z-10 border border-gray-300 dark:border-gray-700">
       {/* Tools */}
       <div className="flex gap-2">
         <button
@@ -71,7 +71,7 @@ export default function Toolbar({ onClear, onUndo, onRedo }: ToolbarProps) {
           className={`p-3 rounded-lg transition-colors ${
             currentTool === 'pen'
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+              : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
           }`}
           title="Pen"
         >
@@ -85,12 +85,13 @@ export default function Toolbar({ onClear, onUndo, onRedo }: ToolbarProps) {
           className={`p-3 rounded-lg transition-colors ${
             currentTool === 'eraser'
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+              : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
           }`}
           title="Eraser"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8l-1 12H9l-1-12z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7l5-4 5 4" />
           </svg>
         </button>
       </div>
@@ -147,7 +148,7 @@ export default function Toolbar({ onClear, onUndo, onRedo }: ToolbarProps) {
         <button
           onClick={handleUndo}
           disabled={strokes.length === 0}
-          className="p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+          className="p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
           title="Undo (Ctrl+Z)"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +159,7 @@ export default function Toolbar({ onClear, onUndo, onRedo }: ToolbarProps) {
         <button
           onClick={handleRedo}
           disabled={redoStack.length === 0}
-          className="p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+          className="p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
           title="Redo (Ctrl+Y)"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,7 +170,7 @@ export default function Toolbar({ onClear, onUndo, onRedo }: ToolbarProps) {
         <button
           onClick={handleClear}
           disabled={strokes.length === 0}
-          className="p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400"
+          className="p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400"
           title="Clear Canvas"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

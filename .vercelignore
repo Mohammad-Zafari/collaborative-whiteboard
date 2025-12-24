@@ -5,5 +5,3 @@ test-supabase.js
 .env.local
 .env*.local
 
-
-

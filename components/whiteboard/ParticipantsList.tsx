@@ -39,7 +39,7 @@ export default function ParticipantsList() {
       {/* Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-24 right-4 z-30 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        className="fixed top-24 right-4 z-30 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-lg p-3 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
         title="Participants"
       >
         <div className="flex items-center gap-2">
@@ -52,7 +52,7 @@ export default function ParticipantsList() {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-80 bg-white dark:bg-gray-800 shadow-2xl z-20 transform transition-transform duration-300 ${
+        className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-80 bg-gray-200 dark:bg-gray-800 shadow-2xl z-20 transform transition-transform duration-300 border-l border-gray-300 dark:border-gray-700 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

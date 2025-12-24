@@ -41,7 +41,7 @@ export default function ShareModal({ isOpen, onClose, roomSlug }: ShareModalProp
       >
         {/* Modal */}
         <div
-          className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full p-6"
+          className="bg-gray-100 dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -101,7 +101,7 @@ export default function ShareModal({ isOpen, onClose, roomSlug }: ShareModalProp
               <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">or</span>
+              <span className="px-2 bg-gray-200 dark:bg-gray-800 text-gray-500">or</span>
             </div>
           </div>
 
