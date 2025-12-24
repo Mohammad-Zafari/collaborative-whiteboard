@@ -11,7 +11,17 @@ A real-time collaborative whiteboard built with Next.js 15, TypeScript, and Supa
 - ✅ Adjustable stroke width (5 sizes)
 - ✅ Undo/Redo functionality
 - ✅ Clear canvas
-- ✅ Keyboard shortcuts (Ctrl+Z, Ctrl+Y)
+- ✅ Keyboard shortcuts
+
+### Phase 5: Advanced Tools ✅ (COMPLETED)
+- ✅ Rectangle tool (fill/outline)
+- ✅ Circle tool (fill/outline)
+- ✅ Line tool
+- ✅ Arrow tool with arrowheads
+- ✅ Text annotation tool
+- ✅ Selection tool (click to select, delete to remove)
+- ✅ Live preview while drawing
+- ✅ Real-time sync for all element types
 
 ### Phase 2: Real-time Collaboration ✅ (COMPLETED - Needs Supabase Config)
 - ✅ Multi-user support with Supabase Realtime
@@ -30,11 +40,22 @@ A real-time collaborative whiteboard built with Next.js 15, TypeScript, and Supa
 - ✅ Dark mode with theme persistence
 - ✅ Enhanced UI/UX
 
-### Phase 4: Persistence (Planned)
-- ⏳ Save strokes to database
-- ⏳ Load room history
-- ⏳ Export canvas as PNG
-- ⏳ Portfolio integration
+### Phase 4: UX Polish ✅ (COMPLETED)
+- ✅ Remote cursor sharing with user names and colors
+- ✅ Participant list sidebar with stats
+- ✅ Export canvas as PNG/JPEG
+- ✅ Copy canvas to clipboard
+- ✅ Dark mode with theme persistence
+- ✅ Enhanced UI/UX
+
+### Phase 5: Advanced Drawing Tools ✅ (COMPLETED)
+- ✅ Shape tools (rectangle, circle, line, arrow)
+- ✅ Text annotation tool
+- ✅ Selection tool (select and delete elements)
+- ✅ Fill/outline toggle for shapes
+- ✅ Real-time sync for shapes and text
+- ✅ Live preview while drawing
+- ✅ Professional tool UI
 
 ## Tech Stack
 
@@ -106,13 +127,18 @@ collaborative-whiteboard/
 - `Ctrl+Z` / `Cmd+Z` - Undo
 - `Ctrl+Y` / `Cmd+Y` - Redo
 - `Ctrl+Shift+Z` / `Cmd+Shift+Z` - Redo
+- `Delete` / `Backspace` - Delete selected element
+- `Enter` - Confirm text input
+- `Escape` - Cancel text input
 
 ## Development Roadmap
 
 - [x] **Phase 1**: Single-user canvas with drawing tools
 - [x] **Phase 2**: Real-time collaboration with Supabase (code complete, needs config)
-- [x] **Phase 3**: Cursor sharing and UX improvements (COMPLETE!)
-- [ ] **Phase 4**: Advanced features (shapes, text, selection)
+- [x] **Phase 3**: Cursor sharing and UX improvements
+- [x] **Phase 4**: Export, dark mode, and polish
+- [x] **Phase 5**: Advanced drawing tools (shapes, text, selection)
+- [ ] **Phase 6**: Pan/zoom, layers, and advanced features (optional)
 
 ## Quick Start
 
