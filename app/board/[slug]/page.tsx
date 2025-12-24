@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Canvas from '@/components/whiteboard/Canvas';
 import ResizableLeftSidebar from '@/components/whiteboard/ResizableLeftSidebar';
 import ResizableRightPanel from '@/components/whiteboard/ResizableRightPanel';
+import MobileToolbar from '@/components/whiteboard/MobileToolbar';
 import RemoteCursors from '@/components/whiteboard/RemoteCursors';
 import ExportMenu from '@/components/whiteboard/ExportMenu';
 import ShareModal from '@/components/whiteboard/ShareModal';
@@ -46,8 +47,19 @@ export default function BoardPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showParticipantsTab, setShowParticipantsTab] = useState(false);
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const realtimeManagerRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Detect mobile on mount
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Initialize user
   useEffect(() => {
@@ -248,26 +260,26 @@ export default function BoardPage() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Modern Top Bar */}
+      {/* Modern Top Bar - Mobile Responsive */}
       <header className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm z-40">
-        <div className="h-full flex items-center justify-between px-4">
+        <div className="h-full flex items-center justify-between px-2 sm:px-4">
           {/* Left: Logo & Room */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
               </div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">CollabBoard</h1>
+              <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white hidden sm:block">CollabBoard</h1>
             </div>
             
-            <div className="h-6 w-px bg-gray-200 dark:bg-gray-800"></div>
+            <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block"></div>
             
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{roomSlug}</span>
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate max-w-[80px] sm:max-w-none">{roomSlug}</span>
               {isSupabaseConfigured && (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium">
+                <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium">
                   <span className="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse"></span>
                   Live
                 </span>
@@ -276,47 +288,56 @@ export default function BoardPage() {
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-2">
-            <ExportMenu canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>} roomSlug={roomSlug} />
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="hidden sm:block">
+              <ExportMenu canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>} roomSlug={roomSlug} />
+            </div>
             
             <button
               onClick={() => setShowShareModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-medium flex items-center gap-2 shadow-lg shadow-blue-500/30"
+              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 shadow-lg shadow-blue-500/30"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
-              Share
+              <span className="hidden sm:inline">Share</span>
             </button>
             
-            <ThemeToggle />
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Left Sidebar */}
-      <ResizableLeftSidebar
-        onUndo={handleUndoAction}
-        onRedo={handleRedoAction}
-        onClear={handleClearCanvas}
-        canUndo={strokes.length > 0}
-        canRedo={redoStack.length > 0}
-      />
+      {/* Left Sidebar - Hidden on Mobile */}
+      <div className="hidden md:block">
+        <ResizableLeftSidebar
+          onUndo={handleUndoAction}
+          onRedo={handleRedoAction}
+          onClear={handleClearCanvas}
+          canUndo={strokes.length > 0}
+          canRedo={redoStack.length > 0}
+        />
+      </div>
 
-      {/* Right Panel */}
-      <ResizableRightPanel
-        showParticipants={showParticipantsTab}
-        onToggleParticipants={() => setShowParticipantsTab(!showParticipantsTab)}
-        isCollapsed={isRightPanelCollapsed}
-        onToggleCollapse={() => setIsRightPanelCollapsed(!isRightPanelCollapsed)}
-      />
+      {/* Right Panel - Hidden on Mobile */}
+      <div className="hidden md:block">
+        <ResizableRightPanel
+          showParticipants={showParticipantsTab}
+          onToggleParticipants={() => setShowParticipantsTab(!showParticipantsTab)}
+          isCollapsed={isRightPanelCollapsed}
+          onToggleCollapse={() => setIsRightPanelCollapsed(!isRightPanelCollapsed)}
+        />
+      </div>
 
-      {/* Main Canvas Area */}
+      {/* Main Canvas Area - Mobile Responsive */}
       <main 
-        className="fixed top-14 bottom-0 bg-white dark:bg-gray-800"
+        className="fixed top-14 bg-white dark:bg-gray-800"
         style={{
-          left: 'var(--left-sidebar-width, 72px)',
-          right: isRightPanelCollapsed ? '0px' : 'var(--right-panel-width, 320px)',
+          left: isMobile ? '0px' : 'var(--left-sidebar-width, 72px)',
+          right: isMobile ? '0px' : (isRightPanelCollapsed ? '0px' : 'var(--right-panel-width, 320px)'),
+          bottom: isMobile ? '64px' : '0px', // Space for mobile toolbar
         }}
       >
         <Canvas
@@ -375,8 +396,17 @@ export default function BoardPage() {
         </div>
       </main>
 
+      {/* Mobile Toolbar */}
+      <MobileToolbar
+        onUndo={handleUndoAction}
+        onRedo={handleRedoAction}
+        onClear={handleClearCanvas}
+        canUndo={strokes.length > 0}
+        canRedo={redoStack.length > 0}
+      />
+
       {/* Share Modal */}
-      <ShareModal 
+      <ShareModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         roomSlug={roomSlug}
