@@ -1,9 +1,12 @@
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from './client';
-import { Stroke, CursorPosition } from '@/types/whiteboard';
+import { Stroke, CursorPosition, Shape, TextElement } from '@/types/whiteboard';
 
 export interface RealtimeCallbacks {
   onStrokeAdded?: (stroke: Stroke) => void;
+  onShapeAdded?: (shape: Shape) => void;
+  onTextAdded?: (text: TextElement) => void;
+  onElementDeleted?: (elementId: string) => void;
   onCursorMove?: (cursor: CursorPosition) => void;
   onUserJoined?: (userId: string, userName: string, color: string) => void;
   onUserLeft?: (userId: string) => void;
@@ -147,6 +150,30 @@ export class RealtimeManager {
       }
     });
 
+    // Subscribe to shape events (broadcast)
+    this.channel.on('broadcast', { event: 'shape' }, ({ payload }) => {
+      if (callbacks.onShapeAdded && payload.userId !== this.userId) {
+        console.log('📐 Received remote shape:', payload.shape.id);
+        callbacks.onShapeAdded(payload.shape);
+      }
+    });
+
+    // Subscribe to text events (broadcast)
+    this.channel.on('broadcast', { event: 'text' }, ({ payload }) => {
+      if (callbacks.onTextAdded && payload.userId !== this.userId) {
+        console.log('📝 Received remote text:', payload.text.id);
+        callbacks.onTextAdded(payload.text);
+      }
+    });
+
+    // Subscribe to element delete events (broadcast)
+    this.channel.on('broadcast', { event: 'delete' }, ({ payload }) => {
+      if (callbacks.onElementDeleted && payload.userId !== this.userId) {
+        console.log('🗑️ Received remote delete:', payload.elementId);
+        callbacks.onElementDeleted(payload.elementId);
+      }
+    });
+
     // Track presence (who's online)
     this.channel.on('presence', { event: 'sync' }, () => {
       const state = this.channel?.presenceState();
@@ -256,6 +283,48 @@ export class RealtimeManager {
       payload: {
         userId: this.userId,
         strokeId: strokeId,
+      },
+    });
+  }
+
+  public sendShape(shape: Shape) {
+    if (!this.channel) return;
+
+    console.log('📤 Broadcasting shape:', shape.id);
+    this.channel.send({
+      type: 'broadcast',
+      event: 'shape',
+      payload: {
+        userId: this.userId,
+        shape: shape,
+      },
+    });
+  }
+
+  public sendText(text: TextElement) {
+    if (!this.channel) return;
+
+    console.log('📤 Broadcasting text:', text.id);
+    this.channel.send({
+      type: 'broadcast',
+      event: 'text',
+      payload: {
+        userId: this.userId,
+        text: text,
+      },
+    });
+  }
+
+  public sendDelete(elementId: string) {
+    if (!this.channel) return;
+
+    console.log('📤 Broadcasting delete:', elementId);
+    this.channel.send({
+      type: 'broadcast',
+      event: 'delete',
+      payload: {
+        userId: this.userId,
+        elementId: elementId,
       },
     });
   }

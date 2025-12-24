@@ -62,39 +62,123 @@ export default function Toolbar({ onClear, onUndo, onRedo }: ToolbarProps) {
     }
   };
 
+  const { fillShapes, setFillShapes } = useWhiteboardStore();
+
+  const toolButton = (tool: Tool, icon: React.ReactNode, title: string) => (
+    <button
+      onClick={() => setTool(tool)}
+      className={`p-3 rounded-lg transition-colors ${
+        currentTool === tool
+          ? 'bg-blue-600 text-white'
+          : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+      }`}
+      title={title}
+    >
+      {icon}
+    </button>
+  );
+
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-lg p-4 flex gap-6 items-center z-10 border border-gray-300 dark:border-gray-700">
-      {/* Tools */}
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-lg p-4 flex gap-6 items-center z-10 border border-gray-300 dark:border-gray-700 max-w-[95vw] overflow-x-auto">
+      {/* Drawing Tools */}
       <div className="flex gap-2">
-        <button
-          onClick={() => setTool('pen')}
-          className={`p-3 rounded-lg transition-colors ${
-            currentTool === 'pen'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-          }`}
-          title="Pen"
-        >
+        {toolButton(
+          'pen',
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-          </svg>
-        </button>
+          </svg>,
+          'Pen'
+        )}
         
-        <button
-          onClick={() => setTool('eraser')}
-          className={`p-3 rounded-lg transition-colors ${
-            currentTool === 'eraser'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-          }`}
-          title="Eraser"
-        >
+        {toolButton(
+          'eraser',
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h8l-1 12H9l-1-12z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7l5-4 5 4" />
-          </svg>
-        </button>
+          </svg>,
+          'Eraser'
+        )}
       </div>
+
+      <div className="w-px h-8 bg-gray-300 dark:bg-gray-600" />
+
+      {/* Shape Tools */}
+      <div className="flex gap-2">
+        {toolButton(
+          'rectangle',
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" strokeWidth={2} />
+          </svg>,
+          'Rectangle'
+        )}
+        
+        {toolButton(
+          'circle',
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" strokeWidth={2} />
+          </svg>,
+          'Circle'
+        )}
+        
+        {toolButton(
+          'line',
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21L21 3" />
+          </svg>,
+          'Line'
+        )}
+        
+        {toolButton(
+          'arrow',
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          </svg>,
+          'Arrow'
+        )}
+      </div>
+
+      <div className="w-px h-8 bg-gray-300 dark:bg-gray-600" />
+
+      {/* Text & Select Tools */}
+      <div className="flex gap-2">
+        {toolButton(
+          'text',
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+          </svg>,
+          'Text'
+        )}
+        
+        {toolButton(
+          'select',
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+          </svg>,
+          'Select'
+        )}
+      </div>
+
+      {/* Fill Toggle for Shapes */}
+      {(currentTool === 'rectangle' || currentTool === 'circle') && (
+        <>
+          <div className="w-px h-8 bg-gray-300 dark:bg-gray-600" />
+          <button
+            onClick={() => setFillShapes(!fillShapes)}
+            className={`p-3 rounded-lg transition-colors ${
+              fillShapes
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+            }`}
+            title={fillShapes ? 'Filled' : 'Outline'}
+          >
+            <svg className="w-5 h-5" fill={fillShapes ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" strokeWidth={2} />
+            </svg>
+          </button>
+        </>
+      )}
+      
+      <div className="w-px h-8 bg-gray-300 dark:bg-gray-600" />
 
       <div className="w-px h-8 bg-gray-300 dark:bg-gray-600" />
 
