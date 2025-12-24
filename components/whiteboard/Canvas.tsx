@@ -191,22 +191,6 @@ export default function Canvas({
       y: e.nativeEvent.offsetY ?? engineRef.current.getCanvasPoint(e.clientX, e.clientY).y,
     };
     
-    // Debug logging
-    console.log('Click Debug:', {
-      offsetX: e.nativeEvent.offsetX,
-      offsetY: e.nativeEvent.offsetY,
-      clientX: e.clientX,
-      clientY: e.clientY,
-      rawPoint,
-      panX,
-      panY,
-      zoom,
-      calculatedPoint: {
-        x: (rawPoint.x - panX) / zoom,
-        y: (rawPoint.y - panY) / zoom,
-      }
-    });
-    
     // Transform to logical canvas coordinates (accounting for zoom and pan)
     // panX/panY are in CSS pixels, zoom is a scale factor
     const point = {
@@ -534,6 +518,85 @@ export default function Canvas({
     }
   };
 
+  // Touch event handlers with pinch-to-zoom
+  const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
+
+  const getTouchDistance = (touch1: React.Touch, touch2: React.Touch) => {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (showTextInput) return;
+    
+    // Pinch to zoom with two fingers
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const distance = getTouchDistance(e.touches[0], e.touches[1]);
+      setLastTouchDistance(distance);
+      return;
+    }
+    
+    // Single touch for drawing
+    if (e.touches.length === 1) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        nativeEvent: {
+          offsetX: touch.clientX - (canvasRef.current?.getBoundingClientRect().left || 0),
+          offsetY: touch.clientY - (canvasRef.current?.getBoundingClientRect().top || 0),
+        },
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      } as any;
+      
+      startDrawing(mouseEvent);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Pinch to zoom with two fingers
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const distance = getTouchDistance(e.touches[0], e.touches[1]);
+      
+      if (lastTouchDistance) {
+        const delta = distance - lastTouchDistance;
+        const zoomDelta = delta * 0.01;
+        const newZoom = Math.max(0.1, Math.min(3, zoom + zoomDelta));
+        setZoom(newZoom);
+      }
+      
+      setLastTouchDistance(distance);
+      return;
+    }
+    
+    // Single touch for drawing
+    if (e.touches.length === 1) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        nativeEvent: {
+          offsetX: touch.clientX - (canvasRef.current?.getBoundingClientRect().left || 0),
+          offsetY: touch.clientY - (canvasRef.current?.getBoundingClientRect().top || 0),
+        },
+      } as any;
+      
+      draw(mouseEvent);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setLastTouchDistance(null);
+    stopDrawing();
+  };
+
   return (
     <div className="relative w-full h-full">
       <canvas
@@ -547,6 +610,10 @@ export default function Canvas({
         onMouseMove={draw}
         onMouseUp={stopDrawing}
         onMouseLeave={stopDrawing}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         onKeyDown={handleKeyDown}
         tabIndex={0}
       />
