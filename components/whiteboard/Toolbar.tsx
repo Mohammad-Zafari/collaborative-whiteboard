@@ -65,13 +65,13 @@ export default function Toolbar({ onClear, onUndo, onRedo }: ToolbarProps) {
   const { fillShapes, setFillShapes } = useWhiteboardStore();
 
   const toolButton = (tool: Tool, icon: React.ReactNode, title: string) => (
-    <button
+        <button
       onClick={() => setTool(tool)}
-      className={`p-3 rounded-lg transition-colors ${
+          className={`p-3 rounded-lg transition-colors ${
         currentTool === tool
-          ? 'bg-blue-600 text-white'
-          : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-      }`}
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+          }`}
       title={title}
     >
       {icon}
