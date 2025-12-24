@@ -3,9 +3,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Canvas from '@/components/whiteboard/Canvas';
-import Toolbar from '@/components/whiteboard/Toolbar';
+import ResizableLeftSidebar from '@/components/whiteboard/ResizableLeftSidebar';
+import ResizableRightPanel from '@/components/whiteboard/ResizableRightPanel';
 import RemoteCursors from '@/components/whiteboard/RemoteCursors';
-import ParticipantsList from '@/components/whiteboard/ParticipantsList';
 import ExportMenu from '@/components/whiteboard/ExportMenu';
 import ShareModal from '@/components/whiteboard/ShareModal';
 import ThemeToggle from '@/components/theme-toggle';
@@ -15,7 +15,7 @@ import { useRoom, useRoomStrokes } from '@/hooks/useRoom';
 import { useRealtime } from '@/hooks/useRealtime';
 import { saveStroke, clearRoomStrokes } from '@/lib/supabase/api';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { Stroke, CursorPosition } from '@/types/whiteboard';
+import { Stroke, CursorPosition, Shape, TextElement, DrawingElement } from '@/types/whiteboard';
 
 export default function BoardPage() {
   const params = useParams();
@@ -27,15 +27,25 @@ export default function BoardPage() {
     userId, 
     userName,
     addStroke,
+    addShape,
+    addText,
+    removeElement,
     loadStrokes,
     clear,
     updateCursor,
     removeCursor,
+    getAllElements,
+    strokes,
+    redoStack,
+    zoom,
+    setZoom,
   } = useWhiteboardStore();
 
   const [userColor, setUserColor] = useState('#FF6B6B');
   const [isReady, setIsReady] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showParticipantsTab, setShowParticipantsTab] = useState(false);
+  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
   const realtimeManagerRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -54,65 +64,71 @@ export default function BoardPage() {
   const { roomId, isLoading: roomLoading } = useRoom(roomSlug);
   const { strokes: historicalStrokes, isLoading: strokesLoading } = useRoomStrokes(roomId);
 
-  // Debug: Log roomId changes
-  useEffect(() => {
-    if (roomId) {
-      console.log('🏠 Room ID loaded:', roomId, '(slug:', roomSlug + ')');
-    }
-  }, [roomId, roomSlug]);
-
   // Load historical strokes into store
   useEffect(() => {
     if (!strokesLoading && historicalStrokes.length > 0) {
       loadStrokes(historicalStrokes);
-      console.log(`📚 Loaded ${historicalStrokes.length} historical strokes`);
     }
   }, [historicalStrokes, strokesLoading, loadStrokes]);
 
   // Real-time callbacks
   const handleStrokeAdded = useCallback((stroke: Stroke) => {
-    console.log('📨 Received remote stroke:', stroke.id);
     addStroke(stroke);
   }, [addStroke]);
+
+  const handleShapeAdded = useCallback((shape: Shape) => {
+    addShape(shape);
+  }, [addShape]);
+
+  const handleTextAdded = useCallback((text: TextElement) => {
+    addText(text);
+  }, [addText]);
+
+  const handleElementDeleted = useCallback((elementId: string) => {
+    const allElements = getAllElements();
+    const element = allElements.find(el => el.id === elementId);
+    if (element) {
+      removeElement(element);
+    }
+  }, [getAllElements, removeElement]);
 
   const handleCursorMove = useCallback((cursor: CursorPosition) => {
     updateCursor(cursor.userId, cursor);
   }, [updateCursor]);
 
   const handleUserJoined = useCallback((userId: string, userName: string, color: string) => {
-    console.log(`👋 ${userName} joined the room`);
+    console.log(`👋 ${userName} joined`);
   }, []);
 
   const handleUserLeft = useCallback((userId: string) => {
-    console.log(`👋 User ${userId} left the room`);
     removeCursor(userId);
   }, [removeCursor]);
 
   const handleClear = useCallback(() => {
-    console.log('🗑️ Received remote clear event');
     clear();
   }, [clear]);
 
   const handleUndo = useCallback((strokeId: string) => {
-    console.log('↩️ Received remote undo for stroke:', strokeId);
     const { removeStrokeById } = useWhiteboardStore.getState();
     removeStrokeById(strokeId);
   }, []);
 
   const handleRedo = useCallback((strokeId: string) => {
-    console.log('↪️ Received remote redo for stroke:', strokeId);
     const { addStrokeById } = useWhiteboardStore.getState();
     addStrokeById(strokeId);
   }, []);
 
-  // Connect to realtime (only when roomId is loaded)
+  // Connect to realtime
   realtimeManagerRef.current = useRealtime(
-    roomId || '', // Use roomId from database (UUID), fallback to slug if not configured
+    roomId || '',
     userId,
     userName,
     userColor,
     {
       onStrokeAdded: handleStrokeAdded,
+      onShapeAdded: handleShapeAdded,
+      onTextAdded: handleTextAdded,
+      onElementDeleted: handleElementDeleted,
       onCursorMove: handleCursorMove,
       onUserJoined: handleUserJoined,
       onUserLeft: handleUserLeft,
@@ -122,60 +138,61 @@ export default function BoardPage() {
     }
   );
 
-  // Handle stroke completion (save to DB)
+  // Handle stroke completion
   const handleStrokeComplete = useCallback(async (stroke: Stroke) => {
-    if (!roomId || !isSupabaseConfigured) {
-      console.warn('⚠️ Cannot save stroke:', { roomId, isConfigured: isSupabaseConfigured });
-      return;
-    }
-    
-    console.log('💾 Saving stroke to database:', {
-      strokeId: stroke.id,
-      roomId: roomId,
-      userId: stroke.userId,
-      pointCount: stroke.points.length,
-    });
-    
-    const success = await saveStroke(roomId, stroke);
-    if (success) {
-      console.log('✅ Stroke saved to database:', stroke.id, 'in room:', roomId);
-    } else {
-      console.error('❌ Failed to save stroke:', stroke.id);
-    }
+    if (!roomId || !isSupabaseConfigured) return;
+    await saveStroke(roomId, stroke);
   }, [roomId]);
 
-  // Handle cursor movement (throttled)
+  // Handle shape completion
+  const handleShapeComplete = useCallback((shape: Shape) => {
+    if (realtimeManagerRef.current?.current) {
+      realtimeManagerRef.current.current.sendShape(shape);
+    }
+  }, []);
+
+  // Handle text completion
+  const handleTextComplete = useCallback((text: TextElement) => {
+    if (realtimeManagerRef.current?.current) {
+      realtimeManagerRef.current.current.sendText(text);
+    }
+  }, []);
+
+  // Handle element deletion
+  const handleElementDelete = useCallback((element: DrawingElement) => {
+    if (realtimeManagerRef.current?.current) {
+      realtimeManagerRef.current.current.sendDelete(element.id);
+    }
+  }, []);
+
+  // Handle cursor movement
   const handleCursorMove2 = useCallback(
     throttle((x: number, y: number) => {
       if (realtimeManagerRef.current?.current) {
         realtimeManagerRef.current.current.sendCursor(x, y);
       }
-    }, 50), // 20fps for cursor updates
+    }, 50),
     []
   );
 
   // Handle clear canvas
   const handleClearCanvas = useCallback(async () => {
-    if (!roomId || !isSupabaseConfigured) return;
-
-    // Clear from database
-    await clearRoomStrokes(roomId);
-    
-    // Broadcast clear event
+    if (!confirm('Clear entire canvas? This cannot be undone.')) return;
+    if (roomId && isSupabaseConfigured) {
+      await clearRoomStrokes(roomId);
+    }
+    clear();
     if (realtimeManagerRef.current?.current) {
       realtimeManagerRef.current.current.sendClear();
     }
-    
-    console.log('🗑️ Canvas cleared and broadcasted');
-  }, [roomId]);
+  }, [roomId, clear]);
 
-  // Handle undo/redo with broadcasting
+  // Handle undo/redo
   const handleUndoAction = useCallback(() => {
     const { getLastStrokeId, undo } = useWhiteboardStore.getState();
     const strokeId = getLastStrokeId();
     if (strokeId) {
       undo();
-      // Broadcast undo
       if (realtimeManagerRef.current?.current) {
         realtimeManagerRef.current.current.sendUndo(strokeId);
       }
@@ -187,15 +204,14 @@ export default function BoardPage() {
     const strokeId = getLastRedoStrokeId();
     if (strokeId) {
       redo();
-      // Broadcast redo
       if (realtimeManagerRef.current?.current) {
         realtimeManagerRef.current.current.sendRedo(strokeId);
       }
     }
   }, []);
 
+  // Keyboard shortcuts
   useEffect(() => {
-    // Keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
@@ -217,10 +233,14 @@ export default function BoardPage() {
 
   if (!isReady || roomLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading room...</p>
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full border-4 border-blue-200 dark:border-blue-900"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Loading Room</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Preparing your canvas...</p>
         </div>
       </div>
     );
@@ -228,62 +248,132 @@ export default function BoardPage() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 h-16 bg-gray-200 dark:bg-gray-800 shadow-sm flex items-center justify-between px-6 z-20 border-b border-gray-300 dark:border-gray-700">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-            Collaborative Whiteboard
-          </h1>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            Room: {roomSlug}
-          </span>
-          {isSupabaseConfigured && (
-            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-              <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
-              Real-time enabled
-            </span>
-          )}
-          {!isSupabaseConfigured && (
-            <span className="text-xs text-yellow-600 dark:text-yellow-400">
-              Local mode (configure Supabase for real-time)
-            </span>
-          )}
-        </div>
-        
-        <div className="flex gap-2 items-center">
-          <ThemeToggle />
-          <ExportMenu canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>} roomSlug={roomSlug} />
-          <button
-            onClick={() => setShowShareModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-            Share
-          </button>
-        </div>
-      </div>
+      {/* Modern Top Bar */}
+      <header className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm z-40">
+        <div className="h-full flex items-center justify-between px-4">
+          {/* Left: Logo & Room */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </div>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">CollabBoard</h1>
+            </div>
+            
+            <div className="h-6 w-px bg-gray-200 dark:bg-gray-800"></div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{roomSlug}</span>
+              {isSupabaseConfigured && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium">
+                  <span className="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse"></span>
+                  Live
+                </span>
+              )}
+            </div>
+          </div>
 
-      {/* Toolbar */}
-      <div className="absolute top-20 left-0 right-0 z-10">
-        <Toolbar 
-          onClear={handleClearCanvas}
-          onUndo={(strokeId) => {
-            if (realtimeManagerRef.current?.current) {
-              realtimeManagerRef.current.current.sendUndo(strokeId);
-            }
-          }}
-          onRedo={(strokeId) => {
-            if (realtimeManagerRef.current?.current) {
-              realtimeManagerRef.current.current.sendRedo(strokeId);
-            }
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2">
+            <ExportMenu canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>} roomSlug={roomSlug} />
+            
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-medium flex items-center gap-2 shadow-lg shadow-blue-500/30"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              Share
+            </button>
+            
+            <ThemeToggle />
+          </div>
+        </div>
+      </header>
+
+      {/* Left Sidebar */}
+      <ResizableLeftSidebar
+        onUndo={handleUndoAction}
+        onRedo={handleRedoAction}
+        onClear={handleClearCanvas}
+        canUndo={strokes.length > 0}
+        canRedo={redoStack.length > 0}
+      />
+
+      {/* Right Panel */}
+      <ResizableRightPanel
+        showParticipants={showParticipantsTab}
+        onToggleParticipants={() => setShowParticipantsTab(!showParticipantsTab)}
+        isCollapsed={isRightPanelCollapsed}
+        onToggleCollapse={() => setIsRightPanelCollapsed(!isRightPanelCollapsed)}
+      />
+
+      {/* Main Canvas Area */}
+      <main 
+        className="fixed top-14 bottom-0 bg-white dark:bg-gray-800"
+        style={{
+          left: 'var(--left-sidebar-width, 72px)',
+          right: isRightPanelCollapsed ? '0px' : 'var(--right-panel-width, 320px)',
+        }}
+      >
+        <Canvas
+          onStrokeComplete={handleStrokeComplete}
+          onShapeComplete={handleShapeComplete}
+          onTextComplete={handleTextComplete}
+          onElementDelete={handleElementDelete}
+          onCursorMove={handleCursorMove2}
+          onCanvasReady={(ref) => {
+            canvasRef.current = ref.current;
           }}
         />
-      </div>
-
-      {/* Participants List */}
-      <ParticipantsList />
+        <RemoteCursors />
+        
+        {/* Zoom Controls - Floating */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2 z-20">
+          <button
+            onClick={() => {
+              const newZoom = Math.max(0.1, zoom - 0.1);
+              setZoom(newZoom);
+            }}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            title="Zoom Out"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+            </svg>
+          </button>
+          
+          <span className="text-sm font-medium min-w-[60px] text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          
+          <button
+            onClick={() => {
+              const newZoom = Math.min(3, zoom + 0.1);
+              setZoom(newZoom);
+            }}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            title="Zoom In"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+            </svg>
+          </button>
+          
+          <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+          
+          <button
+            onClick={() => setZoom(1)}
+            className="px-3 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            title="Reset Zoom"
+          >
+            Reset
+          </button>
+        </div>
+      </main>
 
       {/* Share Modal */}
       <ShareModal 
@@ -291,36 +381,6 @@ export default function BoardPage() {
         onClose={() => setShowShareModal(false)}
         roomSlug={roomSlug}
       />
-
-      {/* Canvas */}
-      <div className="absolute inset-0 top-16">
-        <Canvas 
-          onStrokeComplete={handleStrokeComplete}
-          onCursorMove={handleCursorMove2}
-          onCanvasReady={(ref) => {
-            canvasRef.current = ref.current;
-          }}
-        />
-        {/* Remote cursors overlay */}
-        <RemoteCursors />
-      </div>
-
-      {/* Instructions */}
-      <div className="absolute bottom-4 left-4 bg-gray-200 dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-xs z-10 border border-gray-300 dark:border-gray-700">
-        <h3 className="font-semibold text-sm mb-2 text-gray-900 dark:text-white">
-          Keyboard Shortcuts
-        </h3>
-        <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-          <li><kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Ctrl+Z</kbd> Undo</li>
-          <li><kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Ctrl+Y</kbd> Redo</li>
-          <li><kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Ctrl+Shift+Z</kbd> Redo</li>
-        </ul>
-        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {userName} • {userColor}
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
