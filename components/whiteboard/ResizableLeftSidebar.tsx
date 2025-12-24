@@ -255,3 +255,4 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
     </>
   );
 }
+

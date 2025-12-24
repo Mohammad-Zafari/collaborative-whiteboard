@@ -345,3 +345,4 @@ export default function ResizableRightPanel({ showParticipants, onToggleParticip
     </aside>
   );
 }
+
