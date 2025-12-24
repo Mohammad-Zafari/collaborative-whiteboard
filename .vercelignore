@@ -1,0 +1,9 @@
+# Ignore test files
+test-supabase.js
+
+# Ignore local env files (already in .gitignore)
+.env.local
+.env*.local
+
+
+
