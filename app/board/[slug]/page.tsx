@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import Canvas from '@/components/whiteboard/Canvas';
 import ResizableLeftSidebar from '@/components/whiteboard/ResizableLeftSidebar';
 import ResizableRightPanel from '@/components/whiteboard/ResizableRightPanel';
@@ -9,6 +10,7 @@ import MobileToolbar from '@/components/whiteboard/MobileToolbar';
 import RemoteCursors from '@/components/whiteboard/RemoteCursors';
 import ExportMenu from '@/components/whiteboard/ExportMenu';
 import ShareModal from '@/components/whiteboard/ShareModal';
+import KeyboardShortcuts from '@/components/whiteboard/KeyboardShortcuts';
 import ThemeToggle from '@/components/theme-toggle';
 import { useWhiteboardStore } from '@/store/whiteboard';
 import { generateUserId, generateUserName, generateUserColor, throttle } from '@/lib/canvas/utils';
@@ -45,11 +47,15 @@ export default function BoardPage() {
   const [userColor, setUserColor] = useState('#FF6B6B');
   const [isReady, setIsReady] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showParticipantsTab, setShowParticipantsTab] = useState(false);
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const realtimeManagerRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  
+  // Get active users from remote cursors
+  const activeUsers = Array.from(useWhiteboardStore.getState().remoteCursors.values());
 
   // Detect mobile on mount
   useEffect(() => {
@@ -225,6 +231,13 @@ export default function BoardPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Show keyboard shortcuts on '?'
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setShowShortcutsModal(true);
+        return;
+      }
+      
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
         if (e.shiftKey) {
@@ -245,64 +258,116 @@ export default function BoardPage() {
 
   if (!isReady || roomLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
         <div className="text-center">
-          <div className="relative w-16 h-16 mx-auto mb-6">
-            <div className="absolute inset-0 rounded-full border-4 border-blue-200 dark:border-blue-900"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+          <div className="relative w-20 h-20 mx-auto mb-8">
+            <div className="absolute inset-0 rounded-full border-4 border-indigo-200 dark:border-indigo-900/50"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin"></div>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Loading Room</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Preparing your canvas...</p>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Loading Board</h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Setting up your canvas...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Modern Top Bar - Mobile Responsive */}
-      <header className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm z-40">
-        <div className="h-full flex items-center justify-between px-2 sm:px-4">
-          {/* Left: Logo & Room */}
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="relative w-screen h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+      {/* Modern Professional Top Bar */}
+      <header className="fixed top-0 left-0 right-0 h-16 glass border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm z-40">
+        <div className="h-full flex items-center justify-between px-3 sm:px-6">
+          {/* Left: Logo & Room Info */}
+          <div className="flex items-center gap-3 sm:gap-6 min-w-0">
+            {/* Logo & Brand */}
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:shadow-xl group-hover:shadow-indigo-500/40 transition-all group-hover:scale-105">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
               </div>
-              <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white hidden sm:block">CollabBoard</h1>
-            </div>
+              <span className="text-lg sm:text-xl font-bold hidden sm:block gradient-text">
+                CollabBoard
+              </span>
+            </Link>
             
-            <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block"></div>
+            {/* Divider */}
+            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
             
-            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate max-w-[80px] sm:max-w-none">{roomSlug}</span>
-              {isSupabaseConfigured && (
-                <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium">
-                  <span className="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse"></span>
-                  Live
-                </span>
-              )}
+            {/* Room Info */}
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white truncate max-w-[100px] sm:max-w-[200px]">
+                    {roomSlug}
+                  </span>
+                  {isSupabaseConfigured && (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                      </span>
+                      <span className="hidden sm:inline">Live</span>
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+                  Room • {activeUsers.length + 1} {activeUsers.length === 0 ? 'participant' : 'participants'}
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-2">
+            {/* Participants Avatars (Desktop only) */}
+            {activeUsers.length > 0 && (
+              <div className="hidden lg:flex items-center -space-x-2 mr-2">
+                {activeUsers.slice(0, 3).map((user) => (
+                  <div
+                    key={user.userId}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold border-2 border-white dark:border-slate-900 shadow-md"
+                    style={{ backgroundColor: user.color }}
+                    title={user.userName}
+                  >
+                    {user.userName.charAt(0).toUpperCase()}
+                  </div>
+                ))}
+                {activeUsers.length > 3 && (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-2 border-white dark:border-slate-900 shadow-md">
+                    +{activeUsers.length - 3}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Export Menu (Desktop only) */}
             <div className="hidden sm:block">
               <ExportMenu canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>} roomSlug={roomSlug} />
             </div>
             
+            {/* Keyboard Shortcuts Button (Desktop only) */}
+            <button
+              onClick={() => setShowShortcutsModal(true)}
+              className="hidden lg:flex btn btn-ghost px-3 py-2 text-sm gap-2"
+              title="Keyboard Shortcuts (?)"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+            </button>
+            
+            {/* Share Button */}
             <button
               onClick={() => setShowShareModal(true)}
-              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 shadow-lg shadow-blue-500/30"
+              className="btn btn-primary px-3 sm:px-5 py-2 text-sm gap-2"
             >
-              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
               <span className="hidden sm:inline">Share</span>
             </button>
             
+            {/* Theme Toggle (Desktop only) */}
             <div className="hidden sm:block">
               <ThemeToggle />
             </div>
@@ -333,7 +398,7 @@ export default function BoardPage() {
 
       {/* Main Canvas Area - Mobile Responsive */}
       <main 
-        className="fixed top-14 bg-white dark:bg-gray-800"
+        className="fixed top-16 bg-white dark:bg-slate-900"
         style={{
           left: isMobile ? '0px' : 'var(--left-sidebar-width, 72px)',
           right: isMobile ? '0px' : (isRightPanelCollapsed ? '0px' : 'var(--right-panel-width, 320px)'),
@@ -352,44 +417,46 @@ export default function BoardPage() {
         />
         <RemoteCursors />
         
-        {/* Zoom Controls - Floating */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2 z-20">
+        {/* Zoom Controls - Floating Modern Design */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 glass rounded-xl shadow-xl border border-slate-200/50 dark:border-slate-700/50 px-2 py-2 z-20 backdrop-blur-xl">
           <button
             onClick={() => {
               const newZoom = Math.max(0.1, zoom - 0.1);
               setZoom(newZoom);
             }}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="Zoom Out"
+            className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all active:scale-95 text-slate-700 dark:text-slate-300"
+            title="Zoom Out (Ctrl + -)"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
             </svg>
           </button>
           
-          <span className="text-sm font-medium min-w-[60px] text-center">
-            {Math.round(zoom * 100)}%
-          </span>
+          <div className="px-3 py-1 min-w-[70px] text-center">
+            <span className="text-sm font-semibold text-slate-900 dark:text-white">
+              {Math.round(zoom * 100)}%
+            </span>
+          </div>
           
           <button
             onClick={() => {
               const newZoom = Math.min(3, zoom + 0.1);
               setZoom(newZoom);
             }}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="Zoom In"
+            className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all active:scale-95 text-slate-700 dark:text-slate-300"
+            title="Zoom In (Ctrl + +)"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
             </svg>
           </button>
           
-          <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
           
           <button
             onClick={() => setZoom(1)}
-            className="px-3 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="Reset Zoom"
+            className="px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all active:scale-95 text-slate-700 dark:text-slate-300"
+            title="Reset Zoom (Ctrl + 0)"
           >
             Reset
           </button>
@@ -410,6 +477,12 @@ export default function BoardPage() {
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         roomSlug={roomSlug}
+      />
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcuts
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
       />
     </div>
   );

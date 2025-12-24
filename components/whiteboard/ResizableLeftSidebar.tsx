@@ -62,8 +62,8 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
         onClick={() => setTool(tool)}
         className={`group relative w-full p-3 rounded-xl transition-all ${
           currentTool === tool
-            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40'
+            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
         }`}
         title={label}
       >
@@ -74,8 +74,11 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
           {icon}
         </div>
         {/* Tooltip */}
-        <div className="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+        <div className="absolute left-full ml-3 px-3 py-2 glass border border-slate-200/50 dark:border-slate-700/50 text-slate-900 dark:text-white text-sm font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-xl">
           {label}
+          <div className="absolute right-full top-1/2 -translate-y-1/2 mr-0.5">
+            <div className="w-2 h-2 bg-white dark:bg-slate-800 border-l border-t border-slate-200/50 dark:border-slate-700/50 rotate-[-45deg]"></div>
+          </div>
         </div>
       </button>
     );
@@ -85,13 +88,13 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
     <>
       <aside 
         ref={sidebarRef}
-        className="fixed left-0 top-14 bottom-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-xl z-30 flex flex-col overflow-hidden"
+        className="fixed left-0 top-16 bottom-0 glass border-r border-slate-200/50 dark:border-slate-800/50 shadow-xl z-30 flex flex-col overflow-hidden backdrop-blur-xl"
         style={{ width: `${width}px` }}
       >
         {/* Tools Section */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2">
           {/* Selection & Navigation */}
-          <div className="space-y-1 pb-2 border-b border-gray-200 dark:border-gray-800">
+          <div className="space-y-1.5 pb-3 border-b border-slate-200 dark:border-slate-800">
             {toolButton(
               'select',
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +113,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
           </div>
 
           {/* Drawing Tools */}
-          <div className="space-y-1 pb-2 border-b border-gray-200 dark:border-gray-800">
+          <div className="space-y-1.5 pb-3 border-b border-slate-200 dark:border-slate-800">
             {toolButton(
               'pen',
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +140,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
           </div>
 
           {/* Shape Tools */}
-          <div className="space-y-1 pb-2 border-b border-gray-200 dark:border-gray-800">
+          <div className="space-y-1.5 pb-3 border-b border-slate-200 dark:border-slate-800">
             {toolButton(
               'rectangle',
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,13 +184,13 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
 
           {/* Fill Toggle for Shapes */}
           {(currentTool === 'rectangle' || currentTool === 'circle') && (
-            <div className="pb-2 border-b border-gray-200 dark:border-gray-800">
+            <div className="pb-3 border-b border-slate-200 dark:border-slate-800">
               <button
                 onClick={() => setFillShapes(!fillShapes)}
                 className={`w-full p-3 rounded-xl transition-all ${
                   fillShapes
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                 }`}
                 title={fillShapes ? 'Filled' : 'Outline'}
               >
@@ -200,11 +203,11 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
         </div>
 
         {/* Actions Section */}
-        <div className="p-2 space-y-1 border-t border-gray-200 dark:border-gray-800">
+        <div className="p-3 space-y-2 border-t border-slate-200 dark:border-slate-800">
           <button
             onClick={onUndo}
             disabled={!canUndo}
-            className="w-full p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+            className="w-full p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 active:scale-95"
             title="Undo (Ctrl+Z)"
           >
             <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -215,7 +218,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
           <button
             onClick={onRedo}
             disabled={!canRedo}
-            className="w-full p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+            className="w-full p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 active:scale-95"
             title="Redo (Ctrl+Y)"
           >
             <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,7 +229,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
           <button
             onClick={onClear}
             disabled={!canUndo}
-            className="w-full p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="w-full p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 active:scale-95"
             title="Clear Canvas"
           >
             <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,9 +239,9 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
         </div>
 
         {/* Color Indicator */}
-        <div className="p-2 border-t border-gray-200 dark:border-gray-800">
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800">
           <div
-            className="w-full h-10 rounded-xl border-2 border-gray-200 dark:border-gray-700"
+            className="w-full h-12 rounded-xl border-2 border-slate-200 dark:border-slate-700 shadow-inner cursor-pointer hover:scale-105 transition-transform"
             style={{ backgroundColor: currentColor }}
             title="Current Color"
           />
@@ -246,10 +249,10 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
 
         {/* Resize Handle */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500 transition-colors group"
+          className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-indigo-500 transition-colors group"
           onMouseDown={handleMouseDown}
         >
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-gray-300 dark:bg-gray-700 group-hover:bg-blue-500 rounded-full transition-colors"></div>
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-16 bg-slate-300 dark:bg-slate-700 group-hover:bg-indigo-500 rounded-full transition-all"></div>
         </div>
       </aside>
     </>
