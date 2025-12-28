@@ -1,10 +1,28 @@
 /**
- * Export canvas as PNG image
+ * Export canvas as PNG image with white background
  */
 export function exportCanvasAsPNG(canvas: HTMLCanvasElement, filename: string = 'whiteboard.png') {
   try {
-    // Convert canvas to blob
-    canvas.toBlob((blob) => {
+    // Create a temporary canvas with white background
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    if (!tempCtx) {
+      console.error('Failed to get 2D context');
+      return;
+    }
+
+    // Fill with white background
+    tempCtx.fillStyle = '#FFFFFF';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    
+    // Draw the original canvas on top
+    tempCtx.drawImage(canvas, 0, 0);
+
+    // Convert temp canvas to blob
+    tempCanvas.toBlob((blob) => {
       if (!blob) {
         console.error('Failed to create blob from canvas');
         return;
@@ -31,7 +49,7 @@ export function exportCanvasAsPNG(canvas: HTMLCanvasElement, filename: string = 
 }
 
 /**
- * Export canvas as JPEG image
+ * Export canvas as JPEG image with white background
  */
 export function exportCanvasAsJPEG(
   canvas: HTMLCanvasElement,
@@ -39,7 +57,26 @@ export function exportCanvasAsJPEG(
   quality: number = 0.95
 ) {
   try {
-    canvas.toBlob(
+    // Create a temporary canvas with white background
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    if (!tempCtx) {
+      console.error('Failed to get 2D context');
+      return;
+    }
+
+    // Fill with white background (important for JPEG which doesn't support transparency)
+    tempCtx.fillStyle = '#FFFFFF';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    
+    // Draw the original canvas on top
+    tempCtx.drawImage(canvas, 0, 0);
+
+    // Convert temp canvas to blob
+    tempCanvas.toBlob(
       (blob) => {
         if (!blob) {
           console.error('Failed to create blob from canvas');
@@ -67,12 +104,30 @@ export function exportCanvasAsJPEG(
 }
 
 /**
- * Copy canvas to clipboard
+ * Copy canvas to clipboard with white background
  */
 export async function copyCanvasToClipboard(canvas: HTMLCanvasElement) {
   try {
+    // Create a temporary canvas with white background
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    if (!tempCtx) {
+      throw new Error('Failed to get 2D context');
+    }
+
+    // Fill with white background
+    tempCtx.fillStyle = '#FFFFFF';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    
+    // Draw the original canvas on top
+    tempCtx.drawImage(canvas, 0, 0);
+
+    // Convert temp canvas to blob
     const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, 'image/png');
+      tempCanvas.toBlob(resolve, 'image/png');
     });
 
     if (!blob) {
