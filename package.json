@@ -2,6 +2,16 @@
   "name": "collaborative-whiteboard",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://collaborative-whiteboard-59mgjpuvc.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mohammad-Zafari/collaborative-whiteboard"
+  },
+  "author": {
+    "name": "Mohammad Zafari",
+    "email": "my.mohammad.zafari@gmail.com",
+    "url": "https://nextjs-portfolio-beta-red.vercel.app"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

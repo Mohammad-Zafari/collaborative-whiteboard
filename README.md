@@ -2,6 +2,10 @@
 
 A real-time collaborative whiteboard built with Next.js 15, TypeScript, and Supabase. Draw together with your team in real-time with smooth performance and an intuitive interface.
 
+🔗 **Live Demo**: [https://collaborative-whiteboard-59mgjpuvc.vercel.app](https://collaborative-whiteboard-59mgjpuvc.vercel.app)
+
+📁 **Portfolio**: [https://nextjs-portfolio-beta-red.vercel.app](https://nextjs-portfolio-beta-red.vercel.app)
+
 ## Features
 
 ### Phase 1: Core Drawing ✅ (COMPLETED)
