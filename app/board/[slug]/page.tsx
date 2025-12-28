@@ -400,7 +400,7 @@ export default function BoardPage() {
       <main 
         className="fixed top-16 bg-white dark:bg-slate-900"
         style={{
-          left: isMobile ? '0px' : 'var(--left-sidebar-width, 72px)',
+          left: isMobile ? '0px' : 'var(--left-sidebar-width, 80px)',
           right: isMobile ? '0px' : (isRightPanelCollapsed ? '0px' : 'var(--right-panel-width, 320px)'),
           bottom: isMobile ? '64px' : '0px', // Space for mobile toolbar
         }}

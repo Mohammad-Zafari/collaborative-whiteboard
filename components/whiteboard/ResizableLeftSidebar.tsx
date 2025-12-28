@@ -14,7 +14,7 @@ interface ResizableLeftSidebarProps {
 
 export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo, canRedo }: ResizableLeftSidebarProps) {
   const { currentTool, setTool, currentColor, fillShapes, setFillShapes } = useWhiteboardStore();
-  const [width, setWidth] = useState(72); // Default 72px (w-18)
+  const [width, setWidth] = useState(80); // Default 80px - better starting point
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -23,11 +23,17 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
     setIsResizing(true);
   };
 
+  // Set initial CSS variable on mount
+  useEffect(() => {
+    document.documentElement.style.setProperty('--left-sidebar-width', `${width}px`);
+  }, []);
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
       
-      const newWidth = Math.max(60, Math.min(300, e.clientX));
+      // Increased minimum width from 60 to 64px for better usability
+      const newWidth = Math.max(64, Math.min(300, e.clientX));
       setWidth(newWidth);
       
       // Update CSS variable for canvas positioning
@@ -53,24 +59,58 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
     };
   }, [isResizing]);
 
+  // Calculate responsive dimensions based on sidebar width
+  const getResponsiveSizes = () => {
+    if (width < 72) {
+      // Very narrow: minimal padding, smaller icons
+      return {
+        padding: 'p-1.5',
+        iconSize: 'w-4 h-4',
+        buttonPadding: 'p-2',
+        spacing: 'space-y-1',
+        gap: 'gap-1',
+        roundness: 'rounded-lg',
+        colorHeight: 'h-8'
+      };
+    } else if (width < 90) {
+      // Narrow: reduced padding
+      return {
+        padding: 'p-2',
+        iconSize: 'w-5 h-5',
+        buttonPadding: 'p-2.5',
+        spacing: 'space-y-1.5',
+        gap: 'gap-1.5',
+        roundness: 'rounded-xl',
+        colorHeight: 'h-10'
+      };
+    } else {
+      // Normal: full padding and size
+      return {
+        padding: 'p-3',
+        iconSize: 'w-5 h-5',
+        buttonPadding: 'p-3',
+        spacing: 'space-y-2',
+        gap: 'gap-2',
+        roundness: 'rounded-xl',
+        colorHeight: 'h-12'
+      };
+    }
+  };
+
+  const sizes = getResponsiveSizes();
+
   const toolButton = (tool: Tool, icon: React.ReactNode, label: string) => {
-    // Scale icon size based on sidebar width
-    const iconScale = width < 80 ? 1.2 : 1;
-    
     return (
       <button
         onClick={() => setTool(tool)}
-        className={`group relative w-full p-3 rounded-xl transition-all ${
+        className={`group relative w-full ${sizes.buttonPadding} ${sizes.roundness} transition-all ${
           currentTool === tool
             ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40'
             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
         }`}
         title={label}
       >
-        <div 
-          className="flex items-center justify-center"
-          style={{ transform: `scale(${iconScale})` }}
-        >
+        <div className="flex items-center justify-center">
           {icon}
         </div>
         {/* Tooltip */}
@@ -92,12 +132,12 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
         style={{ width: `${width}px` }}
       >
         {/* Tools Section */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2">
+        <div className={`flex-1 overflow-y-auto overflow-x-hidden ${sizes.padding} ${sizes.spacing}`}>
           {/* Selection & Navigation */}
-          <div className="space-y-1.5 pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div className={`${sizes.spacing} ${width >= 72 ? 'pb-3' : 'pb-2'} border-b border-slate-200 dark:border-slate-800`}>
             {toolButton(
               'select',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={sizes.iconSize} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
               </svg>,
               'Select (V)'
@@ -105,7 +145,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
             
             {toolButton(
               'hand',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={sizes.iconSize} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
               </svg>,
               'Hand (H)'
@@ -113,10 +153,10 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
           </div>
 
           {/* Drawing Tools */}
-          <div className="space-y-1.5 pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div className={`${sizes.spacing} ${width >= 72 ? 'pb-3' : 'pb-2'} border-b border-slate-200 dark:border-slate-800`}>
             {toolButton(
               'pen',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={sizes.iconSize} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>,
               'Pen (P)'
@@ -124,7 +164,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
             
             {toolButton(
               'highlighter',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={sizes.iconSize} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>,
               'Highlighter'
@@ -132,7 +172,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
             
             {toolButton(
               'eraser',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={sizes.iconSize} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>,
               'Eraser (E)'
@@ -140,10 +180,10 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
           </div>
 
           {/* Shape Tools */}
-          <div className="space-y-1.5 pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div className={`${sizes.spacing} ${width >= 72 ? 'pb-3' : 'pb-2'} border-b border-slate-200 dark:border-slate-800`}>
             {toolButton(
               'rectangle',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={sizes.iconSize} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <rect x="3" y="3" width="18" height="18" strokeWidth={2} />
               </svg>,
               'Rectangle (R)'
@@ -151,7 +191,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
             
             {toolButton(
               'circle',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={sizes.iconSize} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="9" strokeWidth={2} />
               </svg>,
               'Circle (C)'
@@ -159,7 +199,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
             
             {toolButton(
               'line',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={sizes.iconSize} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21L21 3" />
               </svg>,
               'Line (L)'
@@ -167,7 +207,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
             
             {toolButton(
               'arrow',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={sizes.iconSize} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>,
               'Arrow (A)'
@@ -175,7 +215,7 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
             
             {toolButton(
               'text',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={sizes.iconSize} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10" />
               </svg>,
               'Text (T)'
@@ -184,17 +224,17 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
 
           {/* Fill Toggle for Shapes */}
           {(currentTool === 'rectangle' || currentTool === 'circle') && (
-            <div className="pb-3 border-b border-slate-200 dark:border-slate-800">
+            <div className={`${width >= 72 ? 'pb-3' : 'pb-2'} border-b border-slate-200 dark:border-slate-800`}>
               <button
                 onClick={() => setFillShapes(!fillShapes)}
-                className={`w-full p-3 rounded-xl transition-all ${
+                className={`w-full ${sizes.buttonPadding} ${sizes.roundness} transition-all ${
                   fillShapes
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                 }`}
                 title={fillShapes ? 'Filled' : 'Outline'}
               >
-                <svg className="w-5 h-5 mx-auto" fill={fillShapes ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`${sizes.iconSize} mx-auto`} fill={fillShapes ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                   <rect x="4" y="4" width="16" height="16" strokeWidth={2} />
                 </svg>
               </button>
@@ -203,14 +243,14 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
         </div>
 
         {/* Actions Section */}
-        <div className="p-3 space-y-2 border-t border-slate-200 dark:border-slate-800">
+        <div className={`${sizes.padding} ${sizes.spacing} border-t border-slate-200 dark:border-slate-800`}>
           <button
             onClick={onUndo}
             disabled={!canUndo}
-            className="w-full p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 active:scale-95"
+            className={`w-full ${sizes.buttonPadding} ${sizes.roundness} transition-all disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 active:scale-95`}
             title="Undo (Ctrl+Z)"
           >
-            <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`${sizes.iconSize} mx-auto`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
             </svg>
           </button>
@@ -218,10 +258,10 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
           <button
             onClick={onRedo}
             disabled={!canRedo}
-            className="w-full p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 active:scale-95"
+            className={`w-full ${sizes.buttonPadding} ${sizes.roundness} transition-all disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 active:scale-95`}
             title="Redo (Ctrl+Y)"
           >
-            <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`${sizes.iconSize} mx-auto`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
             </svg>
           </button>
@@ -229,19 +269,19 @@ export default function ResizableLeftSidebar({ onUndo, onRedo, onClear, canUndo,
           <button
             onClick={onClear}
             disabled={!canUndo}
-            className="w-full p-3 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 active:scale-95"
+            className={`w-full ${sizes.buttonPadding} ${sizes.roundness} transition-all disabled:opacity-30 disabled:cursor-not-allowed text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 active:scale-95`}
             title="Clear Canvas"
           >
-            <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`${sizes.iconSize} mx-auto`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>
         </div>
 
         {/* Color Indicator */}
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800">
+        <div className={`${sizes.padding} border-t border-slate-200 dark:border-slate-800`}>
           <div
-            className="w-full h-12 rounded-xl border-2 border-slate-200 dark:border-slate-700 shadow-inner cursor-pointer hover:scale-105 transition-transform"
+            className={`w-full ${sizes.colorHeight} ${sizes.roundness} border-2 border-slate-200 dark:border-slate-700 shadow-inner cursor-pointer hover:scale-105 transition-transform`}
             style={{ backgroundColor: currentColor }}
             title="Current Color"
           />
