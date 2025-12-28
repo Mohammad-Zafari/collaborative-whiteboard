@@ -194,3 +194,4 @@ export default function MobileToolbar({ onUndo, onRedo, onClear, canUndo, canRed
     </>
   );
 }
+
