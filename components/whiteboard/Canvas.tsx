@@ -60,8 +60,10 @@ export default function Canvas({
     setSelectedElement,
     getAllElements,
     zoom,
+    setZoom,
     panX,
     panY,
+    setPan,
   } = useWhiteboardStore();
 
   const allElements = getAllElements();

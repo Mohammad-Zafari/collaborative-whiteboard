@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Stroke, Tool, Participant, CursorPosition, Shape, TextElement, DrawingElement, StrokeStyle } from '@/types/whiteboard';
+import { Stroke, Tool, Participant, CursorPosition, Shape, TextElement, DrawingElement, StrokeStyle, isStroke, isShape, isText } from '@/types/whiteboard';
 
 interface WhiteboardState {
   // Canvas State
@@ -161,24 +161,60 @@ export const useWhiteboardStore = create<WhiteboardState>((set, get) => ({
   
   undo: () =>
     set((state) => {
-      if (state.strokes.length === 0) return state;
-      const newStrokes = [...state.strokes];
-      const lastStroke = newStrokes.pop();
-      return {
-        strokes: newStrokes,
-        redoStack: lastStroke ? [...state.redoStack, lastStroke] : state.redoStack,
-      };
+      const allElements = [...state.strokes, ...state.shapes, ...state.textElements].sort(
+        (a, b) => a.timestamp - b.timestamp
+      );
+      if (allElements.length === 0) return state;
+      
+      const lastElement = allElements[allElements.length - 1];
+      
+      if (isStroke(lastElement)) {
+        const newStrokes = state.strokes.filter(s => s.id !== lastElement.id);
+        return {
+          strokes: newStrokes,
+          redoStack: [...state.redoStack, lastElement],
+        };
+      } else if (isShape(lastElement)) {
+        const newShapes = state.shapes.filter(s => s.id !== lastElement.id);
+        return {
+          shapes: newShapes,
+          redoStack: [...state.redoStack, lastElement],
+        };
+      } else if (isText(lastElement)) {
+        const newTextElements = state.textElements.filter(t => t.id !== lastElement.id);
+        return {
+          textElements: newTextElements,
+          redoStack: [...state.redoStack, lastElement],
+        };
+      }
+      return state;
     }),
   
   redo: () =>
     set((state) => {
       if (state.redoStack.length === 0) return state;
       const newRedoStack = [...state.redoStack];
-      const strokeToRedo = newRedoStack.pop();
-      return {
-        strokes: strokeToRedo ? [...state.strokes, strokeToRedo] : state.strokes,
-        redoStack: newRedoStack,
-      };
+      const elementToRedo = newRedoStack.pop();
+      
+      if (!elementToRedo) return state;
+      
+      if (isStroke(elementToRedo)) {
+        return {
+          strokes: [...state.strokes, elementToRedo],
+          redoStack: newRedoStack,
+        };
+      } else if (isShape(elementToRedo)) {
+        return {
+          shapes: [...state.shapes, elementToRedo],
+          redoStack: newRedoStack,
+        };
+      } else if (isText(elementToRedo)) {
+        return {
+          textElements: [...state.textElements, elementToRedo],
+          redoStack: newRedoStack,
+        };
+      }
+      return state;
     }),
 
   getLastStrokeId: () => {
@@ -193,39 +229,76 @@ export const useWhiteboardStore = create<WhiteboardState>((set, get) => ({
 
   removeStrokeById: (strokeId) =>
     set((state) => {
+      // Check strokes
       const strokeIndex = state.strokes.findIndex(s => s.id === strokeId);
-      if (strokeIndex === -1) {
-        console.warn('⚠️ Stroke not found for undo:', strokeId);
-        return state;
+      if (strokeIndex !== -1) {
+        const newStrokes = [...state.strokes];
+        const removedStroke = newStrokes.splice(strokeIndex, 1)[0];
+        console.log('↩️ Removed stroke by ID:', strokeId);
+        return {
+          strokes: newStrokes,
+          redoStack: [...state.redoStack, removedStroke],
+        };
       }
       
-      const newStrokes = [...state.strokes];
-      const removedStroke = newStrokes.splice(strokeIndex, 1)[0];
+      // Check shapes
+      const shapeIndex = state.shapes.findIndex(s => s.id === strokeId);
+      if (shapeIndex !== -1) {
+        const newShapes = [...state.shapes];
+        const removedShape = newShapes.splice(shapeIndex, 1)[0];
+        console.log('↩️ Removed shape by ID:', strokeId);
+        return {
+          shapes: newShapes,
+          redoStack: [...state.redoStack, removedShape],
+        };
+      }
       
-      console.log('↩️ Removed stroke by ID:', strokeId, 'from position:', strokeIndex);
+      // Check text elements
+      const textIndex = state.textElements.findIndex(t => t.id === strokeId);
+      if (textIndex !== -1) {
+        const newTextElements = [...state.textElements];
+        const removedText = newTextElements.splice(textIndex, 1)[0];
+        console.log('↩️ Removed text by ID:', strokeId);
+        return {
+          textElements: newTextElements,
+          redoStack: [...state.redoStack, removedText],
+        };
+      }
       
-      return {
-        strokes: newStrokes,
-        redoStack: removedStroke ? [...state.redoStack, removedStroke] : state.redoStack,
-      };
+      console.warn('⚠️ Element not found for undo:', strokeId);
+      return state;
     }),
 
   addStrokeById: (strokeId) =>
     set((state) => {
-      const strokeToAdd = state.redoStack.find(s => s.id === strokeId);
-      if (!strokeToAdd) {
-        console.warn('⚠️ Stroke not found in redo stack:', strokeId);
+      const elementToAdd = state.redoStack.find(s => s.id === strokeId);
+      if (!elementToAdd) {
+        console.warn('⚠️ Element not found in redo stack:', strokeId);
         return state;
       }
       
       const newRedoStack = state.redoStack.filter(s => s.id !== strokeId);
       
-      console.log('↪️ Added stroke back by ID:', strokeId);
+      console.log('↪️ Added element back by ID:', strokeId);
       
-      return {
-        strokes: [...state.strokes, strokeToAdd],
-        redoStack: newRedoStack,
-      };
+      if (isStroke(elementToAdd)) {
+        return {
+          strokes: [...state.strokes, elementToAdd],
+          redoStack: newRedoStack,
+        };
+      } else if (isShape(elementToAdd)) {
+        return {
+          shapes: [...state.shapes, elementToAdd],
+          redoStack: newRedoStack,
+        };
+      } else if (isText(elementToAdd)) {
+        return {
+          textElements: [...state.textElements, elementToAdd],
+          redoStack: newRedoStack,
+        };
+      }
+      
+      return state;
     }),
   
   clear: () =>
